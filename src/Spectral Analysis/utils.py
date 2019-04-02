@@ -219,3 +219,19 @@ class Data(object):
         # return dictionary with TOAs in different formats
         ctbary = {'barys': ctbarytime, 'trigcorr': trigcorr, 'barymet': ctbarymet, 'barytrig': ctbarytrig, 'baryjd': ctbaryjd}
         return ctbary
+
+class Photon(object):
+    def __init__(self, time, energy):
+         self.time = time
+         self.energy=energy
+
+    def mission2mjd(self, mjdrefi, mjdreff, timezero=0.0):
+        self.mjd = (mjdrefi + mjdreff) + (self.time + timezero)/86400.0
+
+    def _in_range(self, lower, upper):
+        if lower <= self.energy <= upper:
+            return True
+        else:
+            return False
+
+        
