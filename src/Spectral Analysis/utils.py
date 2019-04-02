@@ -235,6 +235,16 @@ class Photon(object):
         else:
             return False
 
+def conversion(filename):
+    f=open(filename, 'r')
+    output_lists=defaultdict(list)
+    for line in f:
+        if not line.startswith('#'):
+             line=[value for value in line.split()]
+             for col, data in enumerate(line):
+                 output_lists[col].append(data)
+    return output_lists
+
 
 def getpickle(picklefile):
     file = open(picklefile, 'r')
