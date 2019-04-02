@@ -74,5 +74,53 @@ class TwoPrint(object):
         self.file.close()
         return
 
+def autocorr(x, nlags = 100, fourier=False, norm = True):
+
+
+
+    ### empty list for the ACF
+    r = []
+    ### length of the data set
+    xlen = len(x)
+
+    ### shift data set to a mean=0 (otherwise it comes out wrong)
+    x1 = np.copy(x) - np.mean(x)
+    x1 = list(x1)
+
+    ### add xlen zeros to the array of the second time series (to be able to shift it)
+    x1.extend(np.zeros(xlen))
+
+    ### if not fourier == True, compute explicitly
+    if not fourier:
+        ### loop over all lags
+        for a in range(nlags):
+            ### make a np.array of 2*xlen zeros to store the data set in
+            x2 = np.zeros(len(x1))
+            ### put data set in list, starting at lag a
+            x2[a:a+xlen] = x-np.mean(x)
+            ### compute autocorrelation function for a, append to list r
+            r.append(sum(x1*x2)/((xlen - a)*np.var(x)))
+
+    ### else compute autocorrelation via Fourier transform
+    else:
+        ### Fourier transform of time series
+        fourier = scipy.fft(x-np.mean(x))
+        ### take conjugate of Fourier transform
+        f2 = fourier.conjugate()
+        ### multiply both together to get the power spectral density
+        ff = f2*fourier
+        ### extract real part
+        fr = np.array([b.real for b in ff])
+        ps = fr
+        ### autocorrelation function is the inverse Fourier transform
+        ### of the power spectral density
+        r = scipy.ifft(ps)
+        r = r[:nlags+1]
+    ### if norm == True, normalize everything to 1
+    if norm:
+        rnew = r/(max(r))
+    else:
+        rnew = r
+    return rnew
 
 
