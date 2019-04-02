@@ -39,5 +39,40 @@ def choice_hack(data, p=None, size = 1):
 
         return choice_data
 
+class TwoPrint(object):
+    """
+    Print both to a screen and to a file.
+    Parameters
+    ----------
+    filename : string
+        The name of the file to save to.
+    """
+
+    def __init__(self,filename):
+        self.file = open(filename, "w")
+        self.filename = filename
+        self.file.write("##\n")
+        self.close()
+        return
+
+    def __call__(self, printstr):
+        """
+        Print to a the screen and a file at the
+        same time.
+        Parameters
+        ----------
+        printstr : string
+            The string to be printed to file and screen.
+        """
+        print(printstr)
+        self.file = open(self.filename, "a")
+        self.file.write(printstr + "\n")
+        self.close()
+        return
+
+    def close(self):
+        self.file.close()
+        return
+
 
 
