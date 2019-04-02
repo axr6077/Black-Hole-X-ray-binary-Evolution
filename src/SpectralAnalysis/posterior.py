@@ -37,7 +37,7 @@ class Posterior(object):
 class PerPosterior(Posterior):
     def __init__(self, ps, func):
         self.ps = ps
-        # print('I am here!')
+        # print('Got into PerPosterior!')
         Posterior.__init__(self, ps.freq[1:], ps.ps[1:], func)
         # super(Posterior,self).__init__(ps.freq[1:], ps.ps[1:], func)
 
