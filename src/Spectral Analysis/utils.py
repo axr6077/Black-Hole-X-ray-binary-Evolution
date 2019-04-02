@@ -2,6 +2,7 @@ from __future__ import with_statement
 from collections import defaultdict
 import numpy as np
 import scipy
+import pickle
 
 def choice_hack(data, p=None, size = 1):
     weights = p
@@ -234,4 +235,8 @@ class Photon(object):
         else:
             return False
 
-        
+
+def getpickle(picklefile):
+    file = open(picklefile, 'r')
+    procdata = pickle.load(file)
+    return procdata
