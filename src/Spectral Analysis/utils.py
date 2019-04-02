@@ -1,3 +1,4 @@
+from __future__ import with_statement
 from collections import defaultdict
 import numpy as np
 import scipy
@@ -101,49 +102,120 @@ def autocorr(x, nlags = 100, fourier=False, norm = True):
         The autocorrelation function of the data in x
     """
 
-    ### empty list for the ACF
+    # empty list for the ACF
     r = []
-    ### length of the data set
+    # length of the data set
     xlen = len(x)
 
-    ### shift data set to a mean=0 (otherwise it comes out wrong)
+    # shift data set to a mean=0 (otherwise it comes out wrong)
     x1 = np.copy(x) - np.mean(x)
     x1 = list(x1)
 
-    ### add xlen zeros to the array of the second time series (to be able to shift it)
+    # add xlen zeros to the array of the second time series (to be able to shift it)
     x1.extend(np.zeros(xlen))
 
-    ### if not fourier == True, compute explicitly
+    # if not fourier == True, compute explicitly
     if not fourier:
-        ### loop over all lags
+        # loop over all lags
         for a in range(nlags):
-            ### make a np.array of 2*xlen zeros to store the data set in
+            # make a np.array of 2*xlen zeros to store the data set in
             x2 = np.zeros(len(x1))
-            ### put data set in list, starting at lag a
+            # put data set in list, starting at lag a
             x2[a:a+xlen] = x-np.mean(x)
-            ### compute autocorrelation function for a, append to list r
+            # compute autocorrelation function for a, append to list r
             r.append(sum(x1*x2)/((xlen - a)*np.var(x)))
 
-    ### else compute autocorrelation via Fourier transform
+    # else compute autocorrelation via Fourier transform
     else:
-        ### Fourier transform of time series
-        fourier = scipy.fft(x-np.mean(x))
-        ### take conjugate of Fourier transform
+        # Fourier transform of time series
+        fourier = scipy.fft.fft(x-np.mean(x))
+        # take conjugate of Fourier transform
         f2 = fourier.conjugate()
-        ### multiply both together to get the power spectral density
+        # multiply both together to get the power spectral density
         ff = f2*fourier
-        ### extract real part
+        # extract real part
         fr = np.array([b.real for b in ff])
         ps = fr
-        ### autocorrelation function is the inverse Fourier transform
-        ### of the power spectral density
+        # autocorrelation function is the inverse Fourier transform
+        # of the power spectral density
         r = scipy.ifft(ps)
         r = r[:nlags+1]
-    ### if norm == True, normalize everything to 1
+    # if norm == True, normalize everything to 1
     if norm:
         rnew = r/(max(r))
     else:
         rnew = r
     return rnew
 
+def _checkinput(gti):
+    if len(gti) == 2:
+        try:
+            iter(gti[0])
+        except TypeError:
+            return [gti]
+    return gti
 
+class Data(object):
+    def __init__(self):
+        raise Exception("Don't run this! Use subclass RXTEData or GBMData instead!")
+
+    # Filter out photons that are outside energy thresholds cmin and cmax
+    def filterenergy(self, cmin, cmax):
+        self.photons= [s for s in self.photons if s._in_range(cmin, cmax)]
+
+    def filtergti(self, gti=None):
+        if not gti:
+            gti = self.gti
+        gti= _checkinput(gti)
+        filteredphotons = []
+        times = np.array([t.unbarycentered for t in self.photons])
+        for g in gti:
+            tmin = times.searchsorted(g[0])
+            tmax = times.searchsorted(g[1])
+            photons = self.photons[tmin:tmax]
+            filteredphotons.extend(photons)
+        self.photons = filteredphotons
+
+    def filterburst(self, bursttimes, blen=None, bary=False):
+        tstart= bursttimes[0]
+        tend = bursttimes[1]
+        if blen is None:
+            blen = tend - tstart
+
+        #tunbary = np.array([s.unbarycentered for s in self.photons])
+        time = np.array([s.time for s in self.photons])
+
+        if bary == False:
+            tunbary = np.array([s.time for s in self.photons])
+            stind = tunbary.searchsorted(tstart)
+            eind = tunbary.searchsorted(tend)
+        else:
+            stind = time.searchsorted(tstart)
+            eind = time.searchsorted(tend)
+
+        self.burstphot = self.photons[stind:eind]
+
+    def obsbary(self, poshist):
+
+        # photon times of arrival in MET seconds
+        tobs = np.array([s.time for s in self.photons])
+        # barycentered satellite position history time stamps in MET seconds
+        phtime = np.array([s.phtime for s in poshist.satpos])
+        # Interpolate barycentering correction to photon TOAs
+        tcorr = np.interp(tobs, phtime, poshist.tdiff)
+        # barycentered photon TOAs in TDB seconds since MJDREFI
+        ctbarytime = (tobs + tcorr)
+        ctbarymet = ctbarytime + self.mjdreff*8.64e4  # barycentered TOA in MET seconds
+
+        # barycenter trigger time the same way as TOAs
+        trigcorr = np.interp(self.trigtime, phtime, poshist.tdiff)
+        trigcorr = (self.trigtime + trigcorr)
+
+        # barycentered photon TOAs in seconds since trigger time
+        ctbarytrig = ctbarytime - trigcorr
+        # barycentered photon TOAs as Julian Dates
+        ctbaryjd = ctbarytime/8.64e4 + self.mjdrefi + 2400000.5
+
+        # return dictionary with TOAs in different formats
+        ctbary = {'barys': ctbarytime, 'trigcorr': trigcorr, 'barymet': ctbarymet, 'barytrig': ctbarytrig, 'baryjd': ctbaryjd}
+        return ctbary
