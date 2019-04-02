@@ -8,7 +8,7 @@ import scipy.optimize
 
 dayseconds = 60.*60.*24.
 
-class Lightcurve(object):
+class LightCurve(object):
     def __init__(self, time, counts=None, timestep=1.0, tseg=None, verbose=False, tstart=None, format="seconds"):
 
         self.format = format  # time format
@@ -111,7 +111,6 @@ class Lightcurve(object):
         plt.close()
 
     def rebinLightcurve(self, newres, method='sum', verbose=False, implementation="new"):
-        ### calculate number of bins in new light curve
         nbins = math.floor(self.tseg / newres) + 1
         self.binres = self.tseg / nbins
         print("New time resolution is: " + str(self.binres))
@@ -188,7 +187,7 @@ class Lightcurve(object):
                     continue
                 else:
                     break
-            lcs.append(Lightcurve(tnew, timestep=timestep, tseg=length))
+            lcs.append(LightCurve(tnew, timestep=timestep, tseg=length))
             tstart = tend - overlap
 
         return lcs
@@ -257,7 +256,7 @@ class Lightcurve(object):
         tseg_mjd = self.tseg / dayseconds
         res_mjd = self.res / dayseconds
 
-        lc_mjd = Lightcurve(time=time_mjd, counts=self.counts, format="mjd")
+        lc_mjd = LightCurve(time=time_mjd, counts=self.counts, format="mjd")
         return lc_mjd
 
     def convert_mjd_to_seconds(self):
@@ -269,5 +268,5 @@ class Lightcurve(object):
         tseg_sec = self.time * dayseconds
         res_sec = self.time * dayseconds
 
-        lc_sec = Lightcurve(time=time_sec, counts=self.counts, format="seconds")
+        lc_sec = LightCurve(time=time_sec, counts=self.counts, format="seconds")
         return lc_sec
