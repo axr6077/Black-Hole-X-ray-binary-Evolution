@@ -76,7 +76,30 @@ class TwoPrint(object):
 
 def autocorr(x, nlags = 100, fourier=False, norm = True):
 
-
+    """ Computes the autocorrelation function,
+    i.e. the correlation of a data set with itself.
+    To do this, shift data set by one bin each time and compute correlation for
+    the data set with itself, shifted by i bins
+    If the data is _not_ correlated, then the autocorrelation function is the delta
+    function at lag = 0
+    The autocorrelation function can be computed explicitly, or it can be computed
+    via the Fourier transform (via the Wiener-Kinchin theorem, I think)
+    Parameters
+    ----------
+    x : {list, array-like}
+        The input data to autocorrelate.
+    nlags : int, optional, default 100
+        The number of lags to compute,
+    fourier: boolean, optional, default False
+        If True, use the Fourier transform to compute the ACF (True),
+        otherwise don't.
+    norm : boolean, optional, default True
+        If True, normalize the the ACF to 1
+    Returns
+    -------
+    rnew : array-like
+        The autocorrelation function of the data in x
+    """
 
     ### empty list for the ACF
     r = []
