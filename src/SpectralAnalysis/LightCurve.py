@@ -11,6 +11,8 @@ dayseconds = 60.*60.*24.
 class LightCurve(object):
     def __init__(self, time, counts=None, timestep=1.0, tseg=None, verbose=False, tstart=None, format="seconds"):
 
+        self.df = None
+        self.ctypes = None
         self.format = format  # time format
         if counts is None:
             if verbose == True:
@@ -153,7 +155,7 @@ class LightCurve(object):
         return
 
     def addpoisson(self):
-        pcounts = np.array([np.random.poisson for x in self.ctype])
+        pcounts = np.array([np.random.poisson for x in self.ctypes])
         pcountrate = pcounts / self.res
         self.counts = pcounts
         self.countrate = pcountrate
@@ -245,9 +247,6 @@ class LightCurve(object):
         """
         Convert time format of the light curve from seconds (MET or otherwise)
         to MJD.
-        Parameter:
-        ----------
-            mjdobs: the start time of the light curve in MJD format.
         """
         assert self.format == "seconds", "Time format of the light curve must be seconds to" \
                                          "be able to convert to MJD"
