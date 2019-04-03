@@ -71,7 +71,7 @@ class LightCurve(object):
                 self.res = histbins[1] - histbins[0]
 
             # print("len timebins: " + str(len(timebins)))
-            if frac > 0.0:
+            if frac > 0:
                 self.counts = np.array(counts[:-1])
             else:
                 self.counts = np.array(counts)
@@ -86,7 +86,7 @@ class LightCurve(object):
             else:
                 self.countrate = self.counts / (self.res * dayseconds)
             self.time = np.array([histbins[0] + 0.5 * self.res + n * self.res for n in range(int(timebin))])
-            if frac > 0.0:
+            if frac > 0:
                 self.time = np.array(self.time[:-1])
             else:
                 self.time = self.time
@@ -118,11 +118,10 @@ class LightCurve(object):
         print("New time resolution is: " + str(self.binres))
 
         if implementation in ["o", "old"]:
-            self.bintime, self.bincounts, self.binres = self._rebin(self.time, self.counts, nbins, method,
-                                                                    verbose=verbose)
+            self.bintime, self.bincounts, self.binres = self._rebin(self.time, self.counts, nbins, method)
         else:
             # print("Got into rebinLightCure hell yeah!")
-            self.bintime, self.bincounts, self.binres = self._rebin_new(self.time, self.counts, newres, method)
+            self.bintime, self.bincounts, self.binres = self._rebin(self.time, self.counts, newres, method)
 
     def bkgestimate(self, tseg, loc='both'):
 
@@ -209,7 +208,7 @@ class LightCurve(object):
 
         return fitparams
 
-    def _rebin_new(self, time, counts, dtnew, method='sum'):
+    def _rebin(self, time, counts, dtnew, method='sum'):
 
         try:
             step_size = float(dtnew) / float(self.res)
