@@ -97,13 +97,21 @@ def multicore_list(sc, options={}):  # sc is a dict with indices
     # random.shuffle(sci) #shuffling here is not really necessary. Just adds complexity
 
     l4 = len(sci) / 4
-    chunks = [
-        sci[0:l4],
-        sci[l4:2 * l4],
-        sci[2 * l4:3 * l4],
-        sci[3 * l4:]
-    ]
+    print(sci)
+    print(sci[0:l4])
+    chunks = []
+    chunks.append([sci[0:l4]])
+    # chunks.append([sci[l4:2 * l4]])
+    # chunks.append([sci[2 * l4:3 * l4]])
+    # chunks.append([sci[3 * l4:]])
+    # chunks = [
+    #     sci[0:l4],
+    #     sci[l4:2 * l4],
+    #     sci[2 * l4:3 * l4],
+    #     sci[3 * l4:]
+    # ]
 
+    print(chunks)
     q = Queue()
     processes = []
     for i in range(4):
@@ -129,11 +137,16 @@ def multicore_list(sc, options={}):  # sc is a dict with indices
 # and with various view angles (radius vector / view vector angle, called theta)
 
 def deflection_array(r, angles, options={}):
-    rprimes = - r * 1 / np.tan(angles)
+    rprimes1 = []
+    rprimes1.append(- r * 1 / np.tan(angles))
 
+    rprimes = []
     inc = {}
+    for i in rprimes1:
+        for j in i:
+            rprimes.append(j)
     for i in range(len(angles)):
-        inc[i] = [r, rprimes[i]]
+       inc[i] = [r, rprimes[i]]
 
     res = multicore_list(inc, options)
 
@@ -159,10 +172,10 @@ def deflection_array(r, angles, options={}):
             if path[t] > 0.999:
                 break
 
-        if findex == -1:
-            deflections[i, 1] = -1
-        else:
-            deflections[i, 1] = phi[t]
+            if findex == -1:
+                deflections[i, 1] = -1
+            else:
+                deflections[i, 1] = phi[t]
 
             # deflections[i,2] = path[0]
             # deflections[i,3] = path[1]
