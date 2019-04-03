@@ -22,7 +22,7 @@ def add_ps(psall, method='avg'):
     psnew.norm = psall[0].norm
     return psnew
 
-class PowerSpectrum(LightCurve.Lightcurve):
+class PowerSpectrum(LightCurve.LightCurve):
     def __init__(self, lc=None, counts=None, nphot=None, norm='leahy', m=1, verbose=False):
 
         self.norm = norm

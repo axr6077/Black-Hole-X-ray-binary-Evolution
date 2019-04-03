@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Schwarzschild Black Hole</title>
+
+<link type="text/css" href="resources/webgl-tutorials.css" rel="stylesheet" />
+<!--jQuery & Bootstrap --!>
+<script src="http://code.jquery.com/jquery-1.11.2.min.js" type="text/javascript"></script>
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap.min.css">
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap-theme.min.css">
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/js/bootstrap.min.js"></script>
+<!--WebGL Utils--!>
+<script type="text/javascript" src="resources/webgl-utils.js"></script>
+<!--Fullscreen query--!>
+<script>
+
+function fullscreen(){
+           var el = document.getElementById('canvas');
+
+           if(el.webkitRequestFullScreen) {
+               el.webkitRequestFullScreen();
+           }
+          else {
+             el.mozRequestFullScreen();
+          }
+}
+
+</script>
+<!--The real magic--!>
+<script>
+var gl;
+var neheTexture;
+var bgTexture;
+var haTexture;
+var curtex;
+var clicked = 0;
+var clx;
+var cly;
+var orbiting = 1;
+var regime = 1.0;
+var targetvangle = 0.0;
+document.addEventListener("DOMContentLoaded", initev, false);
+function initev()
+{
+var canvas = document.getElementById("canvas");
+canvas.addEventListener("mousedown", getPosition, false);
+}
+function getPosition(event)
+{
+var x = new Number();
+var y = new Number();
+var canvas = document.getElementById("canvas");
+if (event.x != undefined && event.y != undefined)
+{
+  x = event.x;
+  y = event.y;
+}
+else // Firefox method to get the position
+{
+  x = event.clientX + document.body.scrollLeft +
+      document.documentElement.scrollLeft;
+  y = event.clientY + document.body.scrollTop +
+      document.documentElement.scrollTop;
+}
+x -= canvas.offsetLeft;
+y -= canvas.offsetTop;
+clicked = 1;
+clx = x;
+cly = y;
+}
+//functions called on settings form click events
+function checkres(value)
+{
+	var canvas = document.getElementById("canvas");
+	if (value == "240p")
+	{canvas.width=320;canvas.height=240;}
+	else if (value == "480p")
+	{canvas.width=640;canvas.height=480;}
+	else if (value == "786p")
+	{canvas.width=1024;canvas.height=786;}
+	else if (value =="1080p")
+	{canvas.width=1920;canvas.height=1080;}
+}
+function checktex(value)
+{
+
+	if (value == "bg")
+		curtex = bgTexture;
+	else if (value == "ha")
+		curtex = haTexture;
+	else if (value == "lp")
+		curtex = lpTexture;
+	else if (value == "uv")
+		curtex = uvTexture;
+	else
+		curtex = Null;
+}
+function checkorb(value)
+{
+	orbiting = value;
+}
+function checklook(value)
+{
+	targetvangle = value;
+}
+// MAIN FUNCTION
+window.onload = main;
+function main() {
+  var canvas = document.getElementById("canvas");
+  gl = getWebGLContext(canvas);
+  if (!gl) {
+    return;
+  }
+  //Textures are loaded
+  initTexture();
+
+  //Shader compilation
+  vertexShader = createShaderFromScriptElement(gl, "2d-vertex-shader");
+  fragmentShader = createShaderFromScriptElement(gl, "2d-fragment-shader");
+  program = createProgram(gl, [vertexShader, fragmentShader]);
+  gl.useProgram(program);
+
+  //Uniform location
+  var positionLocation = gl.getAttribLocation(program, "a_position");
+  var timeUniform = gl.getUniformLocation(program, "time"); // Getting location
+  var rUniform = gl.getUniformLocation(program, "R"); // Getting location
+  var betaUniform = gl.getUniformLocation(program, "beta"); // Getting location
+  var gammaUniform = gl.getUniformLocation(program, "gamma"); // Getting location
+  var resUniform = gl.getUniformLocation(program, "resolution");
+  var lookUniform = gl.getUniformLocation(program, "viewrot");
+  //Radius/velocity display ID
+  var radiusP = document.getElementById("radiusP");
+  //Geometry (just a quad)
+  var buffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+    -1.0, -1.0,
+     1.0, -1.0,
+    -1.0,  1.0,
+    -1.0,  1.0,
+     1.0, -1.0,
+     1.0,  1.0]), gl.STATIC_DRAW);
+  gl.enableVertexAttribArray(positionLocation);
+  gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0);
+  //The two uniform sampler location
+  var u_defLocation = gl.getUniformLocation(program, "defSampler"); //deflection lookup tex
+  var u_bgLocation = gl.getUniformLocation(program, "bgSampler");   //lat long sky sphere
+  //binding
+  gl.uniform1i(u_defLocation,2);
+  gl.uniform1i(u_bgLocation,3);
+
+  //start time
+  var timec = 3000*Math.random();
+  var R = 0.0;
+  var R_target;
+  var beta;
+  var gamma;
+  var lookangle = 0.0;
+  //canvas starts at high resolution and is only scaled down here, to fit screen
+  //this is done because things work weird otherwise
+  if (screen.width < 786){
+			       canvas.width=640;
+			       canvas.height=480;
+	}
+  else
+  {
+    canvas.width = 1024;
+    canvas.height = 786;
+  }
+  //MAIN LOOP
+  setInterval(function () {
+	  if (clicked){
+		R_target = 1.55+8.35*cly/canvas.height;
+		R += 0.02 * (R_target - R);
+		 }
+	  else{
+	 	 R = 7.0+2.9 * Math.sin(timec*0.0031);
+	   }
+  regime += 0.01 *  (orbiting - regime);
+  //relativity shit
+  var beta_orb = 0.707 * 1.0 / Math.sqrt(R-1.0);
+  var gamma_orb = 1. / Math.sqrt(1.0 - beta*beta);
+
+
+  beta = regime * beta_orb;
+  gamma = (1.-regime) + regime*gamma_orb;
+  //look angle
+  lookangle += 0.01 * (targetvangle - lookangle);
+  //updating info div
+  radiusP.innerHTML = "Distance: " + R.toFixed(2) + " S. radii<br>Orbital velocity: " + beta.toFixed(2) + " c<br>Orbital &gamma;: "+gamma.toFixed(3)+"<br>";
+  if(orbiting)
+	  if (R<=3.0)
+		  radiusP.innerHTML += "<span class=\"label label-warning\">Unstable orbit</span><br><small>Inertial, but corrections needed.</small>";
+	  else
+		  radiusP.innerHTML += "<span class=\"label label-primary\">Stable orbit</span><br><small>Inertial, engines off</small>";
+  else
+	  radiusP.innerHTML += "<span class=\"label label-danger\">Hovering</span><br><small>Accelerating, engines on.</small>";
+  //we must rebind textures every frame
+  gl.activeTexture(gl.TEXTURE2);
+  gl.bindTexture(gl.TEXTURE_2D, neheTexture);
+  gl.activeTexture(gl.TEXTURE3);
+  gl.bindTexture(gl.TEXTURE_2D, curtex);
+  // updating uniforms
+  gl.uniform1f(timeUniform, timec );
+  gl.uniform1f(rUniform, R);
+  gl.uniform1f(betaUniform, beta);
+  gl.uniform1f(gammaUniform, gamma);
+  gl.uniform2f(resUniform, canvas.width, canvas.height);
+  gl.uniform1f(lookUniform,lookangle);
+  // draw
+  gl.drawArrays(gl.TRIANGLES, 0, 6);
+
+  timec += regime;
+  },10);
+}
+ function initTexture() {
+    neheTexture = gl.createTexture();
+    neheTexture.image = new Image();
+    neheTexture.image.onload = function() {
+      handleLoadedTexture(neheTexture)
+    }
+    neheTexture.image.src = "deflections_tex.png";
+    bgTexture = gl.createTexture();
+    bgTexture.image = new Image();
+    bgTexture.image.onload = function() {
+      handleLoadedTexture(bgTexture)
+    }
+    bgTexture.image.src = "tex/bg1024.png";
+    haTexture = gl.createTexture();
+    haTexture.image = new Image();
+    haTexture.image.onload = function() {
+      handleLoadedTexture(haTexture)
+    }
+    haTexture.image.src = "tex/ha1024.jpg";
+    lpTexture = gl.createTexture();
+    lpTexture.image = new Image();
+    lpTexture.image.onload = function() {
+      handleLoadedTexture(lpTexture)
+    }
+    lpTexture.image.src = "tex/lp1024.jpg";
+    uvTexture = gl.createTexture();
+    uvTexture.image = new Image();
+    uvTexture.image.onload = function() {
+      handleLoadedTexture(uvTexture)
+    }
+    uvTexture.image.src = "tex/uv1024.jpg";
+    curtex = bgTexture;
+  }
+  function handleLoadedTexture(texture) {
+	  window.console.log("handleLoadedTexture " + texture.image.src);
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, texture.image);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.bindTexture(gl.TEXTURE_2D, null);
+  }
+</script>
+<!-- vertex shader -->
+<script id="2d-vertex-shader" type="x-shader/x-vertex">
+attribute vec2 a_position;
+void main() {
+   gl_Position = vec4(a_position, 0, 1);
+}
+</script>
+
+<!-- fragment shader -->
+<script id="2d-fragment-shader" type="x-shader/x-fragment">
+//This shader is part magic, part luck
+//so it stays uncommented for now
+precision mediump float;
+#define M_PI 3.1415926535897932384626433832795 //not enough digits
+uniform sampler2D defSampler;
+uniform sampler2D bgSampler;
+uniform float time;
+uniform vec2 resolution;
+uniform float R;
+uniform float beta;
+uniform float gamma;
+uniform float viewrot;
+const float tanfov = 3.;
+vec3 rotate(const vec3 v, float theta, const vec3 axis) {
+	float cosTheta = cos(theta);
+	return  v * cosTheta + cross(axis, v) * sin(theta) + axis * dot(v, axis) * (1.0 - cosTheta);
+}
+vec4 stripes(vec3 view, float horizonflag) { //argument must be normalized
+
+	return vec4(horizonflag * step(fract(5.*atan(view.z,view.x)),.8) * step(fract(5.*acos(view.y)),.8) * vec3(1.,-view.y,view.y), 1.) ;
+}
+vec3 aberrate(vec3 original)
+{
+	return vec3(-beta * length(original) + gamma * original.x, original.yz );
+}
+vec4 starfield(vec3 view, float horizonflag) {
+	float latitude = acos(view.y)/M_PI;
+	float longitude = atan(view.z,view.x)/(2.0*M_PI);
+	return min(
+		texture2D( bgSampler, vec2(longitude,latitude)),
+		vec4(horizonflag*vec3(1.,1.,1.),1.)
+		);
+}
+const float textureSize = 512.0;
+const float texelSize = 1.0 / textureSize;
+vec4 texture2DInterp( sampler2D textureSampler, vec2 uv ) //not actually used right now
+{
+    vec4 tl = texture2D(textureSampler, uv);
+    vec4 tr = texture2D(textureSampler, uv + vec2(texelSize, 0));
+    vec4 bl = texture2D(textureSampler, uv + vec2(0, texelSize));
+    vec4 br = texture2D(textureSampler, uv + vec2(texelSize , texelSize));
+    vec2 f = fract( uv.xy * textureSize ); // get the decimal part
+    vec4 tA = mix( tl, tr, f.x ); // will interpolate the red dot in the image
+    vec4 tB = mix( bl, br, f.x ); // will interpolate the blue dot in the image
+    //return mix( tA, tB, f.y ); // will interpolate the green dot in the image
+    float st = smoothstep(0.,1.,f.y);
+    return tA*(1.0-st) + st*tB;
+}
+void main() {
+    //get screen coords
+    vec2 uvscr = gl_FragCoord.xy / resolution;
+    vec2 uv = (uvscr - 0.5) * vec2(1.,resolution.y/resolution.x);
+
+    uv *= tanfov;
+
+    vec3 uv3 = normalize( aberrate( rotate( vec3(uv, -1.0),viewrot,vec3(0,1,0)   )));
+    float theta = acos(dot(uv3,vec3(0,0,-1)));
+
+    //float dphi = 2./(R*sin(theta));
+	//small-angle approximation
+    //float Phi_sa =  M_PI - (theta - dphi);
+    vec2 params = vec2( (R-1.0)/9.0,  1. - theta /M_PI );
+    vec4 distcolor = texture2D(defSampler,params);
+				// VVV why we should have a .98 here will forever be a mistery
+    float Phi_ba =  2.* M_PI  * (0.98*distcolor.r+0.1*(distcolor.g));
+
+    float Phi = Phi_ba; //(1.-step(theta,1.0))*Phi_sa + (step(theta,1.0))*Phi_ba;
+
+    vec3 v3 = -normalize(cross(vec3(0,0,-1),uv3));
+
+    uv3 = rotate(vec3(0,0,R), Phi, v3);
+
+
+    float nothorizon =  max(
+				smoothstep(0.,0.05,texture2D(defSampler,params).r) * (1.-step(theta,0.01)) ,
+				(1.-step(theta,1.57))
+				);
+
+    uv3 = rotate(uv3, time * 0.0015, vec3(0., 1., 0.));
+
+    //vec4 color = textureCube(iChannel0, cubeTexCoord);
+    vec4 color = starfield(normalize(uv3), nothorizon);
+    gl_FragColor = color;
+    //gl_FragColor = texture2DInterp(bgSampler,(uv)*0.1);	//DEBUG: test uv
+    //gl_FragColor = vec4(theta * vec3(1.,1.,1.),1.);		//DEBUG: test theta
+   // gl_FragColor = vec4(Phi/(2.*M_PI) * vec3(1.,1.,1.),1.);	//DEBUG: test Phi
+}
+</script>
+</head>
+<body >
+<div class="container">
+
+	<div class="col-md-3 col-sm-3 col-xs-6">
+		<p>Click/tap on canvas to set distance.</p>
+		<p id="radiusP">Radius</p>
+		<h4>Look...</h4>
+		<form>
+			<input checked type="radio" name="lookradio" onclick="checklook(0.0)">Straight at the center<br>
+			<input type="radio" name="lookradio" onclick="checklook(-1.57)">Ahead in your orbit<br>
+		</form>
+	</div>
+	<div class="col-md-3 col-sm-3 col-xs-6">
+		<h4>Resolution</h4>
+		<form>
+		<input type="radio" name="resradio" onclick="checkres(this.value)" value="240p">320x240<br>
+		<input type="radio" name="resradio" onclick="checkres(this.value)" value="480p">640x480<br>
+		<input checked type="radio" name="resradio" onclick="checkres(this.value)" value="786p">1024x786<br>
+		<input type="radio" name="resradio" onclick="checkres(this.value)" value="1080p">1920x1080<br>
+		<br>
+		</form>
+		<button class="btn btn-default" onclick="fullscreen();"><span class="glyphicon glyphicon-fullscreen" aria-hidden="true"></span> Go Fullscreen</button>
+		<br>
+	</div>
+	<div class="col-md-3 col-sm-3 col-xs-6">
+		<h4>Texture</h4>
+		<form>
+		<input checked type="radio" name="texradio" onclick="checktex(this.value)" value="bg">Milky Way<br>
+		<input type="radio" name="texradio" onclick="checktex(this.value)" value="ha">H-alpha<br>
+		<input type="radio" name="texradio" onclick="checktex(this.value)" value="uv">lat-long grid<br>
+		<br>
+		</form>
+	</div>
+	<div class="col-md-3 col-sm-3 col-xs-6">
+		<h4>Orbit</h4>
+		<form>
+		<input checked type="radio" name="orbradio" onclick="checkorb(1)">Circular orbit<br>
+		<input type="radio" name="orbradio" onclick="checkorb(0)">Hover Schwarzschild-stationary<br>
+		</form>
+	</div>
+</div>
+<div height="30" style="display: inline-block;"></div>
+	<div class="row" width="1920">
+	<canvas id="canvas" width="1920" height="1080" style="margin-left: auto; margin-right: auto; display: block; padding: 0px;" ></canvas>
+	</div>
+</body>
+</html>
