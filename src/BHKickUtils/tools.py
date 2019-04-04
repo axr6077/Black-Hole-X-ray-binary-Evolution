@@ -28,7 +28,7 @@ def infft(hf, Fs):
 
 def inner_product(aa, bb, freq, PSD):
     PSD_interp_func = interp1d(PSD[:, 0], PSD[:, 1] ** 2, bounds_error=False,
-                               fill_value=np.inf)  # Notice **2 change (15/12/16)
+                               fill_value=np.inf)
     PSD_interp = PSD_interp_func(freq)
     integrand = np.conj(aa) * bb / PSD_interp
     df = freq[1] - freq[0]
@@ -127,7 +127,7 @@ def contour_plot(tlist, plist, olist):
     plt1 = fig.add_subplot(111)
     CS = plt1.contour(xi, yi, zi, 15, linewidths=0.5, colors='k')
     CS = plt1.contourf(xi, yi, zi, levels=levels)
-    fig.colorbar(CS, format="%.2f")  # draw colorbar
+    fig.colorbar(CS, format="%.2f")
     plt1.set_xlabel('time shift (s)')
     plt1.set_ylabel('Phase shift (radians)')
     plt1.set_title('Contour plot')

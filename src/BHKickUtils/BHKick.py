@@ -13,9 +13,6 @@ import scipy.interpolate
 from matplotlib.mlab import griddata
 
 def plot(time,ht1,title='Time domain waveform'):
-    '''
-    Plots a single waveform
-    '''
     fig = plt.figure()
     plt1 = fig.add_subplot(111)
     plt1.plot(list(time), list(ht1))
@@ -30,14 +27,6 @@ class noise():
         self.aligochar = self.LIGOnoisedata()
 
     def LIGOnoisedata(self):
-        """Returns an interpolated function for the noise data produced by LIGO.
-        INPUT: formatted file illustrating aLIGO design minimums.
-
-        Simply reads in the data file from the file specified in open(),
-        and interpolates the ASD from the file.
-
-        OUTPUT: Interpolated data for the ASD of the sensitivity of aLIGO.
-        """
         with open("ZERO_DET_high_P.txt") as file:
             filearr = file.readlines()
             dataarr = []
