@@ -12,5 +12,3 @@ Deep analysis of the galactic black hole x-ray binary GRS 1915+105 that contains
 
 ## Important Observation
 Unstable trends of count rate and R^2 at extreme wind column densities. 
-
-## Description: 
