@@ -1,7 +1,7 @@
 Version: 1.3
 Release Version: 1.0
 # Black-Hole-X-ray-binary-Evolution
-Deep analysis of the galactic black hole x-ray binary GRS 1915+105 that contains a stellar-mass black hole and its evolution over the years 1992-2016. The studies would include but not limited to: tests of GT relativity in strong gravity, plasma physics in accretion discs and particle acceleration. The model promises to predict the extended evolution of this particular BHXRB by studing the light curves extracted over 4 energy bands using multi dimensional logistic regression and forest predictive algorithms.   
+Deep analysis of the galactic black hole x-ray binary GRS 1915+105 that contains a stellar-mass black hole and its evolution over the years 1992-2016. The studies include tests of GT relativity in strong gravity, plasma physics in accretion discs and particle acceleration. The model predicts the extended evolution of this particular BHXRB by studing the light curves extracted over 4 energy bands using multi dimensional logistic regression and forest predictive algorithms.   
 
 ## Factors to consider 
 * Superluminal projection (microquasar theory)- relativistic aberration
